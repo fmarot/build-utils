@@ -1,0 +1,27 @@
+:toc: macro
+
+image:https://maven-badges.herokuapp.com/maven-central/com.teamtter.build/build-utils/badge.svg["Maven Central", link="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.teamtter.build%22"]
+
+toc::[]
+
+= build-utils
+
+ 
+
+== What's this ?
+
+
+== How to use
+
+=== Maven dependency
+
+This lib will be available from Maven Central:
+
+[source,xml]
+-------------------------------------------
+	<dependency>
+		<groupId>com.teamtter.build</groupId>
+		<artifactId>build-utils</artifactId>
+		<version>0.1.0</version>
+	</dependency>
+-------------------------------------------
