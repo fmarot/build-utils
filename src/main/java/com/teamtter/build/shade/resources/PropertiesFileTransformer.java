@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.teamtter.build;
+package com.teamtter.build.shade.resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.jar.JarOutputStream;
 
 import org.apache.maven.plugins.shade.relocation.Relocator;
 import org.apache.maven.plugins.shade.resource.ResourceTransformer;
+import org.apache.maven.shared.utils.StringUtils;
 import org.codehaus.plexus.util.IOUtil;
 
 /**
@@ -109,44 +111,45 @@ import org.codehaus.plexus.util.IOUtil;
  * are defined.</p>
  *
  * @author Andres Almiray
+ * @author Francois Marot
  */
 public class PropertiesFileTransformer implements ResourceTransformer {
-    private static final String PROPERTIES_SUFFIX = ".properties";
-    private static final String KEY_MERGE_STRATEGY = "mergeStrategy";
-    private static final String KEY_MERGE_SEPARATOR = "mergeSeparator";
+	private static final String					PROPERTIES_SUFFIX	= ".properties";
+	private static final String					KEY_MERGE_STRATEGY	= "mergeStrategy";
+	private static final String					KEY_MERGE_SEPARATOR	= "mergeSeparator";
 
-    private Map<String, Properties> propertiesEntries = new LinkedHashMap<>();
+	private Map<String, Properties>				propertiesEntries	= new LinkedHashMap<>();
 
-    // Transformer properties
-    private List<String> paths = new ArrayList<>();
-    private Map<String, Map<String, String>> mappings = new LinkedHashMap<>();
-    private String mergeStrategy = "first"; // latest, append
-    private String mergeSeparator = ",";
+	// Transformer properties
+	private List<String>						paths				= new ArrayList<>();
+	private Map<String, Map<String, String>>	mappings			= new LinkedHashMap<>();
+	private String								mergeStrategy		= "first"; // latest, append
+	private String								mergeSeparator		= ",";
 
-    @Override
-    public boolean canTransformResource(String resource) {
-        if (mappings.containsKey(resource)) {
-            return true;
-        }
-        for (String key : mappings.keySet()) {
-            if (resource.matches(key)) {
-                return true;
-            }
-        }
+	@Override
+	public boolean canTransformResource(String resource) {
+		if (mappings.containsKey(resource)) {
+			return true;
+		}
+		for (String key : mappings.keySet()) {
+			if (resource.matches(key)) {
+				return true;
+			}
+		}
 
-        if (paths.contains(resource)) {
-            return true;
-        }
-        for (String path : paths) {
-            if (resource.matches(path)) {
-                return true;
-            }
-        }
+		if (paths.contains(resource)) {
+			return true;
+		}
+		for (String path : paths) {
+			if (resource.matches(path)) {
+				return true;
+			}
+		}
 
-        return mappings.isEmpty() && paths.isEmpty() && resource.endsWith(PROPERTIES_SUFFIX);
-    }
+		return mappings.isEmpty() && paths.isEmpty() && resource.endsWith(PROPERTIES_SUFFIX);
+	}
 
-    @Override
+	@Override
     public void processResource(String resource, InputStream is, List<Relocator> relocators) throws IOException {
         Properties props = propertiesEntries.get(resource);
         if (props == null) {
@@ -159,18 +162,22 @@ public class PropertiesFileTransformer implements ResourceTransformer {
             for (String key : incoming.stringPropertyNames()) {
                 String value = incoming.getProperty(key);
                 if (props.containsKey(key)) {
-                    String ms = mergeStrategyFor(resource).toLowerCase();
-                    switch (mergeStrategyFor(resource).toLowerCase()) {
+                    String mergeStrategy = mergeStrategyFor(resource).toLowerCase();
+                    switch (mergeStrategy) {
                         case "latest":
                             props.put(key, value);
                             break;
                         case "append":
                             props.put(key, props.getProperty(key) + mergeSeparatorFor(resource) + value);
                             break;
+                        case "appendunique":
+                        	if (! alreadyContainsValue(props.getProperty(key), value, mergeSeparatorFor(resource))) {
+                        		props.put(key, props.getProperty(key) + mergeSeparatorFor(resource) + value);
+                        	}
+                        	break;
                         case "first":
                         default:
-                            // continue
-                            break;
+                            throw new IOException("Unhandled strategy: " + mergeStrategy);
                     }
                 } else {
                     props.put(key, value);
@@ -179,100 +186,67 @@ public class PropertiesFileTransformer implements ResourceTransformer {
         }
     }
 
-    @Override
-    public boolean hasTransformedResource() {
-        return propertiesEntries.size() > 0;
-    }
+	@Override
+	public boolean hasTransformedResource() {
+		return propertiesEntries.size() > 0;
+	}
 
-    @Override
-    public void modifyOutputStream(JarOutputStream os) throws IOException {
-        for (Map.Entry<String, Properties> e : propertiesEntries.entrySet()) {
-            os.putNextEntry(new JarEntry(e.getKey()));
-            IOUtil.copy(toInputStream(e.getValue()), os);
-            os.closeEntry();
-        }
-    }
+	@Override
+	public void modifyOutputStream(JarOutputStream os) throws IOException {
+		for (Map.Entry<String, Properties> e : propertiesEntries.entrySet()) {
+			os.putNextEntry(new JarEntry(e.getKey()));
+			IOUtil.copy(toInputStream(e.getValue()), os);
+			os.closeEntry();
+		}
+	}
 
-    // == Private
+	// == Private
 
-    private static InputStream toInputStream(Properties props) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        props.store(baos, "");
-        return new ByteArrayInputStream(baos.toByteArray());
-    }
+	private boolean alreadyContainsValue(String existingValues, String newValue, String separator) {
+		if (existingValues != null) {
+			String[] split = StringUtils.split(existingValues, separator);
+			return Arrays.asList(split).contains(newValue);
+		} else {
+			return false;
+		}
+	}
 
-    private String mergeStrategyFor(String path) {
-        if (mappings.containsKey(path)) {
-            return getMappingValue(path, KEY_MERGE_STRATEGY, mergeStrategy);
-        }
-        for (String key : mappings.keySet()) {
-            if (path.matches(key)) {
-                return getMappingValue(key, KEY_MERGE_STRATEGY, mergeStrategy);
-            }
-        }
+	private static InputStream toInputStream(Properties props) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		props.store(baos, "");
+		return new ByteArrayInputStream(baos.toByteArray());
+	}
 
-        return mergeStrategy;
-    }
+	private String mergeStrategyFor(String path) {
+		if (mappings.containsKey(path)) {
+			return getMappingValue(path, KEY_MERGE_STRATEGY, mergeStrategy);
+		}
+		for (String key : mappings.keySet()) {
+			if (path.matches(key)) {
+				return getMappingValue(key, KEY_MERGE_STRATEGY, mergeStrategy);
+			}
+		}
 
-    private String mergeSeparatorFor(String path) {
-        if (mappings.containsKey(path)) {
-            return getMappingValue(path, KEY_MERGE_SEPARATOR, mergeSeparator);
-        }
-        for (String key : mappings.keySet()) {
-            if (path.matches(key)) {
-                return getMappingValue(key, KEY_MERGE_SEPARATOR, mergeSeparator);
-            }
-        }
+		return mergeStrategy;
+	}
 
-        return mergeSeparator;
-    }
+	private String mergeSeparatorFor(String path) {
+		if (mappings.containsKey(path)) {
+			return getMappingValue(path, KEY_MERGE_SEPARATOR, mergeSeparator);
+		}
+		for (String key : mappings.keySet()) {
+			if (path.matches(key)) {
+				return getMappingValue(key, KEY_MERGE_SEPARATOR, mergeSeparator);
+			}
+		}
 
-    private String getMappingValue(String key, String setting, String defaultValue) {
-        Map<String, String> config = mappings.get(key);
-        String value = config.get(setting);
-        return value != null && value.trim().length() > 0 ? value : defaultValue;
-    }
+		return mergeSeparator;
+	}
 
-    // == Properties
+	private String getMappingValue(String key, String setting, String defaultValue) {
+		Map<String, String> config = mappings.get(key);
+		String value = config.get(setting);
+		return value != null && value.trim().length() > 0 ? value : defaultValue;
+	}
 
-    // made public for testing
-    public Map<String, Properties> getPropertiesEntries() {
-        return propertiesEntries;
-    }
-
-    public void setPropertiesEntries(Map<String, Properties> propertiesEntries) {
-        this.propertiesEntries = propertiesEntries;
-    }
-
-    public List<String> getPaths() {
-        return paths;
-    }
-
-    public void setPaths(List<String> paths) {
-        this.paths = paths;
-    }
-
-    public Map<String, Map<String, String>> getMappings() {
-        return mappings;
-    }
-
-    public void setMappings(Map<String, Map<String, String>> mappings) {
-        this.mappings = mappings;
-    }
-
-    public String getMergeStrategy() {
-        return mergeStrategy;
-    }
-
-    public void setMergeStrategy(String mergeStrategy) {
-        this.mergeStrategy = mergeStrategy;
-    }
-
-    public String getMergeSeparator() {
-        return mergeSeparator;
-    }
-
-    public void setMergeSeparator(String mergeSeparator) {
-        this.mergeSeparator = mergeSeparator;
-    }
 }
