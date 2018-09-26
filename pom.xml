@@ -5,7 +5,7 @@
 	<groupId>com.teamtter.build</groupId>
 	<artifactId>build-utils</artifactId>
 	<packaging>jar</packaging>
-	<version>0.1.1-SNAPSHOT</version>
+	<version>0.1.1</version>
 
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Build utilities</description>
@@ -16,8 +16,8 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<maven.version>3.5.3</maven.version>
 
-		<compiler.source>1.7</compiler.source>
-		<compiler.target>1.7</compiler.target>
+		<compiler.source>1.8</compiler.source>
+		<compiler.target>1.8</compiler.target>
 
 		<compiler.plugin.version>3.6.1</compiler.plugin.version>
 		<source.plugin.version>2.1.2</source.plugin.version>
