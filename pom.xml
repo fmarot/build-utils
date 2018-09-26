@@ -1,13 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>com.oleamedical.oleasphere</groupId>
-		<artifactId>oleasphere-company-pom</artifactId>
-		<version>0.2.3</version>
-		<relativePath /> <!-- force lookup parent from repository -->
-	</parent>
-	
 	<groupId>com.teamtter.build</groupId>
 	<artifactId>build-utils</artifactId>
 	<packaging>jar</packaging>
@@ -50,11 +44,11 @@
 		<connection>scm:git:git@github.com:fmarot/build-utils.git</connection>
 		<developerConnection>scm:git:git@github.com:fmarot/build-utils.git</developerConnection>
 		<url>git@github.com:fmarot/build-utils.git</url>
-	  <tag>HEAD</tag>
-  </scm>
-<!--
+		<tag>HEAD</tag>
+	</scm>
+
 	<distributionManagement>
-		 To deploy to Maven Central, if you are using the Maven deploy plugin, which is the default behavior, we need this "distributionManagement" section. 
+		<!-- To deploy to Maven Central, if you are using the Maven deploy plugin, which is the default behavior, we need this "distributionManagement" section. -->
 		<snapshotRepository>
 			<id>ossrh</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -64,7 +58,7 @@
 			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 		</repository>
 	</distributionManagement>
--->
+
 	<build>
 		<plugins>
 			<plugin>
@@ -116,7 +110,7 @@
 					<configuration>
 						<mavenExecutorId>forked-path</mavenExecutorId>
 						<useReleaseProfile>false</useReleaseProfile>
-<!-- 						<arguments>-Pgpgsign</arguments> -->
+						<arguments>-Pgpgsign</arguments>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -160,14 +154,14 @@
 			<artifactId>maven-shade-plugin</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 	</dependencies>
 
 </project>
